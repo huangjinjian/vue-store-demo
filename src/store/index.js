@@ -5,11 +5,13 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
+    isLogin: false
   },
-  mutations: {
-  },
+  mutations: {},
   actions: {
+    checkLogin (context) {
+      console.log('Hello world!')
+    }
   },
-  modules: {
-  }
+  modules: {}
 })
