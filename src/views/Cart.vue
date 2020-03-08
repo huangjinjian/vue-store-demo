@@ -83,57 +83,54 @@
               </ul>
             </div>
             <ul class="cart-item-list">
-              <!-- <li v-for="item in cartList">
+              <li v-for="item in cartList">
                 <div class="cart-tab-1">
                   <div class="cart-item-check">
-                    <a href="javascipt:;"
-                       class="checkbox-btn item-check-btn"
-                       v-bind:class="{'check':item.checked=='1'}"
-                       @click="editCart('checked',item)">
+                    <a
+                      href="javascipt:;"
+                      class="checkbox-btn item-check-btn"
+                      v-bind:class="{'check':item.checked}"
+                      @click="edit(item,4)"
+                    >
                       <svg class="icon icon-ok">
-                        <use xlink:href="#icon-ok"></use>
+                        <use xlink:href="#icon-ok" />
                       </svg>
                     </a>
                   </div>
                   <div class="cart-item-pic">
-                    <img v-lazy="'/static/'+item.productImage"
-                         v-bind:alt="item.productName">
+                    <img v-lazy="'/images/'+item.prodcutImg" v-bind:alt="item.productName" />
                   </div>
                   <div class="cart-item-title">
                     <div class="item-name">{{item.productName}}</div>
                   </div>
                 </div>
                 <div class="cart-tab-2">
-                  <div class="item-price">{{item.salePrice|currency('$')}}</div>
+                  <div class="item-price">{{item.prodcutPrice|currency()}}</div>
                 </div>
                 <div class="cart-tab-3">
                   <div class="item-quantity">
                     <div class="select-self select-self-open">
                       <div class="select-self-area">
-                        <a class="input-sub"
-                           @click="editCart('minu',item)">-</a>
+                        <a class="input-sub" @click="edit(item,2)">-</a>
                         <span class="select-ipt">{{item.productNum}}</span>
-                        <a class="input-add"
-                           @click="editCart('add',item)">+</a>
+                        <a class="input-add" @click="edit(item,1)">+</a>
                       </div>
                     </div>
                   </div>
                 </div>
                 <div class="cart-tab-4">
-                  <div class="item-price-total">{{(item.productNum*item.salePrice)|currency('$')}}</div>
+                  <div class="item-price-total">{{item.productNum*item.prodcutPrice|currency()}}</div>
                 </div>
                 <div class="cart-tab-5">
                   <div class="cart-item-opration">
-                    <a href="javascript:;"
-                       class="item-edit-btn"
-                       @click="delCartConfirm(item)">
+                    <a href="javascript:;" class="item-edit-btn" @click="edit(item,3)">
                       <svg class="icon icon-del">
-                        <use xlink:href="#icon-del"></use>
+                        <use xlink:href="#icon-del" />
                       </svg>
                     </a>
                   </div>
                 </div>
-              </!-->
+              </li>
             </ul>
           </div>
         </div>
@@ -159,7 +156,7 @@
               <div class="btn-wrap">
                 <a
                   class="btn btn--red"
-                  v-bind:class="{'btn--dis':checkedCount==0}"
+                  v-bind:class="{'btn--dis':!checkedCount}"
                   @click="checkOut"
                 >Checkout</a>
               </div>
@@ -172,7 +169,7 @@
     <modal :mdShow="modalConfirm" @close="closeModal">
       <p slot="message">你确认要删除此条数据吗?</p>
       <div slot="btnGroup">
-        <a class="btn btn--m" href="javascript:;" @click="delCart">确认</a>
+        <a class="btn btn--m" href="javascript:;" @click="delCartConfirm">确认</a>
         <a class="btn btn--m btn--red" href="javascript:;" @click="modalConfirm = false">关闭</a>
       </div>
     </modal>
@@ -205,20 +202,110 @@
 </style>
 
 <script>
-import NavHeader from '../components/NavHeader'
-import NavBread from '../components/NavBread'
-import NavFooter from '../components/NavFooter'
-import Modal from '../components/Modal'
+import NavHeader from "../components/NavHeader";
+import NavBread from "../components/NavBread";
+import NavFooter from "../components/NavFooter";
+import Modal from "../components/Modal";
 
-import { currency } from '../util/currency'
+import { currency } from "../util/currency";
 
 export default {
-  data () {
+  data() {
     return {
       modalConfirm: false,
-      checkAllFlag: false,
-      totalPrice: 1,
-      checkedCount: 2
+      cartList: [],
+      delItem: ""
+    };
+  },
+  computed: {
+    checkAllFlag() {
+      if (this.cartList.length) {
+        return this.cartList.every(item => {
+          return item.checked;
+        });
+      } else {
+        return false;
+      }
+    },
+    checkedCount() {
+      let count = 0;
+      this.cartList.forEach(item => {
+        count = item.checked ? count + 1 : count;
+      });
+      return count;
+    },
+    totalPrice() {
+      let total = 0;
+      this.cartList.forEach(item => {
+        total = item.checked
+          ? total + item.prodcutPrice * item.productNum
+          : total;
+      });
+      return total;
+    }
+  },
+  async mounted() {
+    this.getCartList();
+  },
+  methods: {
+    async getCartList() {
+      let cartRes = await this.$http.post(this.$api.Users.getCartlist, {
+        user_id: this.$store.state.userId
+      });
+      this.cartList = cartRes.data.cartList;
+    },
+    async edit(item, type) {
+      // 1代表增 2 减 3 del 4 check
+      let opt = Object.assign({}, item);
+      switch (type) {
+        case 1:
+          opt.productNum++;
+          break;
+        case 2:
+          opt.productNum--;
+          if (opt.productNum <= 0) {
+            this.delItem = opt;
+            this.modalConfirm = true;
+            return false;
+          }
+          break;
+        case 3:
+          this.modalConfirm = true;
+          opt.productNum = 0;
+          this.delItem = opt;
+          return false;
+          break;
+        default:
+          opt.checked = !opt.checked;
+          break;
+      }
+      this.editCart(opt);
+    },
+    toggleCheckAll() {
+      this.editCart({ checkAllOnoff: true, checkAll: !this.checkAllFlag });
+    },
+    delCartConfirm() {
+      this.modalConfirm = false;
+      this.editCart(this.delItem);
+    },
+    async editCart(opt) {
+      let editRes = await this.$http.post(this.$api.Users.editCart, {
+        user_id: this.$store.state.userId,
+        ...opt
+      });
+      if (editRes.state == 1) {
+        this.getCartList();
+        this.$store.dispatch("cart");
+      }
+    },
+    checkOut() {
+      if (!this.checkedCount) {
+        return;
+      }
+      this.$router.push({ name: "Address" });
+    },
+    closeModal() {
+      this.modalConfirm = false;
     }
   },
   components: {
@@ -227,22 +314,10 @@ export default {
     NavFooter,
     Modal
   },
-  mounted () {
-
-  },
   filters: {
     currency: currency
-  },
-  methods: {
-
-    closeModal () {
-      this.modalConfirm = false
-    },
-    delCart () {},
-    toggleCheckAll () {},
-    checkOut () {}
   }
-}
+};
 </script>
 
 <style scoped lang='scss'>

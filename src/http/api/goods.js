@@ -1,3 +1,4 @@
 export default {
-  GoodsList: '/good'
+  GoodsList: '/goods',
+  GoodsAdd:'/goods-add'
 }

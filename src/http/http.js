@@ -42,10 +42,10 @@ export default {
    * @param auth 是否需要带登录信息
    * @returns {AxiosPromise<any>}
    */
-  post (url, data, auth = false) {
+  post (url, data = {}, auth = false) {
     if (auth) {
       return new Promise((resolve, reject) => {
-        axios.get(url, {
+        axios.post(url, {
           data: data,
           headers: {
             Authorization: 'Your back-end user authenticates information'
@@ -58,7 +58,7 @@ export default {
       })
     } else {
       return new Promise((resolve, reject) => {
-        axios.get(url, {
+        axios.post(url, {
           data: data
         }).then(res => {
           resolve(res.data)

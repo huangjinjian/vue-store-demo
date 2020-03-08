@@ -6,11 +6,25 @@ import store from './store'
 import api from './http/api'
 import http from './http/http'
 
+import VueLazyload from 'vue-lazyload'
+import infiniteScroll from 'vue-infinite-scroll'
+
 // 引入css
 import '@/assets/css/init.css'
 
+//引入element
+import ElementUI from 'element-ui';
+import 'element-ui/lib/theme-chalk/index.css';
+Vue.use(ElementUI);
+
 // axios 拦截器
 import './http/axios'
+
+Vue.use(infiniteScroll)
+Vue.use(VueLazyload, {
+  loading: 'load.gif',
+  try: 3
+})
 
 // 对后端接口 进行全局注册
 Vue.prototype.$api = api

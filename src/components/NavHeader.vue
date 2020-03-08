@@ -59,8 +59,8 @@
                   v-text="cartCount"
                   v-if="cartCount"> </span>
             <a class="navbar-link navbar-cart-link"
-               href="/#/cart">
-              <svg class="navbar-cart-logo">
+               href="javascript:void(0)" @click="goCart">
+              <svg class="navbar-cart-logo" >
                 <use xmlns:xlink="http://www.w3.org/1999/xlink"
                      xlink:href="#icon-cart"></use>
               </svg>
@@ -117,6 +117,9 @@
     <div class="md-overlay"
          v-if="loginModalFlag"
          @click="closeMedal"></div>
+    <modal :mdShow="outModal" >
+      <p slot="message">退出成功</p>
+    </modal>
   </header>
 </template>
 <style>
@@ -192,27 +195,78 @@ a {
 }
 </style>
 <script>
+
+import Modal from '../components/Modal'
+
 export default {
   data () {
     return {
-      nickName: 'nickName',
-      cartCount: '',
       errorTip: false,
       userName: '',
       userPwd: '',
-      loginModalFlag: false
+      loginModalFlag: false,
+      outModal:false
+    }
+  },
+  async mounted() {
+    let checkRes = await this.$http.post(this.$api.Users.loginCheckout)
+    if(checkRes.state == 1){
+      this.$store.commit('updateUserState',checkRes.data)
+      this.$store.dispatch('cart')
+    }
+  },
+  computed: {
+    nickName (){
+      return this.$store.state.userName
+    },
+    cartCount(){
+      return this.$store.getters.cartCount
     }
   },
   methods: {
     closeMedal () {
       this.loginModalFlag = false
     },
-    logOut () {
-
+    goCart(){
+      if(this.$store.state.userId){
+        this.$router.push({
+          name:'Cart'
+        })
+      }else{
+        this.loginModalFlag = true
+      }
     },
-    login () {
-
+    async logOut () {
+      let outRes = await this.$http.post(this.$api.Users.loginOut)
+      this.$store.commit('init')
+      let that = this
+      if (outRes.state = 1){
+        this.$store.commit('updateUserState',{})
+      }
+      this.outModal = true
+      this.errorTip = false
+      setTimeout(() => {
+        that.outModal = false
+        that.$router.replace({path:'/'})
+      }, 1200);
+    },
+    async login () {
+      const loginRes = await this.$http.post(this.$api.Users.login, {
+        userName: this.userName,
+        userPwd: this.userPwd
+      })
+      if (loginRes.state == 1) {
+        this.loginModalFlag = false
+        this.$store.commit('updateUserState',loginRes.data)
+        this.$store.dispatch('cart')
+      }else{
+        this.errorTip = true
+        this.$store.commit('updateUserState',{})
+      }
     }
+  },
+  components:{
+    Modal
   }
 }
 </script>
